@@ -16,7 +16,7 @@ const storage = multer.diskStorage({
 });
 
 function fileFilter(req, file, cb) {
-    if (!ALLOWED_MINE.includes(file.minetype)) {
+    if (!ALLOWED_MIME.includes(file.mimetype)) {
         return cb(new AppError('Formato de imagen no permitido (solo jpg, png o webp)', 400));
     }
     cb(null, true);
