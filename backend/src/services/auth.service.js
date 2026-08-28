@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const pool = require('..config/db');
+const pool = require('../config/db');
 const { createToken } = require('../utils/jwt');
 const AppError = require('../utils/AppError');
 
