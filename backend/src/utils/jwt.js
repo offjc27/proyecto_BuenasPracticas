@@ -10,7 +10,7 @@ function createToken(user) {
             rol: user.rol
         },
         env.jwt.secret,
-        { expiresIn: env.jwt.expireIn }
+        { expiresIn: env.jwt.expiresIn }
     );
 }
 
