@@ -1,56 +1,20 @@
-const bcrypt = require('bcrypt');
-const pool = require('../config/db');
-const { createToken } = require('../utils/jwt');
-const AppError = require('../utils/AppError');
+const express = require('express');
+const controller = require('../controllers/equipos.controller');
+const { authenticate, authorize } = require('../middlewares/auth.middleware');
+const { uploadEquipoImagen } = require('../middlewares/upload.middleware');
 
-async function registerUser({ nombre, email, password }) {
-    if (!nombre || !email || !password) {
-        throw new AppError('nombre, email y password son obligatorios', 400);
-    }
+const router = express.Router();
 
-    const [existing] = await pool.execute(
-        'SELECT id_usuario FROM usuarios WHERE email = ?',
-        [email]
-    );
+router.use(authenticate);
 
-    if (existing.length) {
-        throw new AppError('El correo ya está registrado', 409);
-    }
+router.get('/', controller.list);
+router.get('/:id', controller.getById);
 
-    const hash = await bcrypt.hash(password, 10);
+// admin y cliente pueden crear/editar en este ejemplo.
+router.post('/', authorize('admin', 'cliente'), uploadEquipoImagen, controller.create);
+router.put('/:id', authorize('admin', 'cliente'), uploadEquipoImagen, controller.update);
 
-    const [result] = await pool.execute(
-        'INSERT INTO usuarios (nombre, email, password, rol) VALUES (?, ?, ?, ?)',
-        [nombre, email, hash, 'cliente']
-    );
+// Solo admin puede eliminar.
+router.delete('/:id', authorize('admin'), controller.remove);
 
-    return { id_usuario: result.insertId };
-}
-
-async function loginUser({ email, password }) {
-    if (!email || !password) {
-        throw new AppError('email y password son obligatorios', 400);
-    }
-
-    const [rows] = await pool.execute(
-    'SELECT id_usuario, nombre, email, password, rol FROM usuarios WHERE email = ?',
-    [email]
-);
-
-if (!rows.length) {
-    throw new AppError('Credenciales incorrectas', 401);
-}
-
-const user = rows[0];
-const valid = await bcrypt.compare(password, user.password);
-
-if (!valid) {
-    throw new AppError('Credenciales incorrectas', 401);
-}
-
-delete user.password;
-
-return { user, token: createToken(user) };
-}
-
-module.exports = { registerUser, loginUser };
+module.exports = router;
